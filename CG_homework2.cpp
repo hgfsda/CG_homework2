@@ -34,14 +34,28 @@ int window_w, window_h;
 int length_size, width_size;
 float cameraPos_x, cameraPos_y, cameraPos_z;
 float cube_x[20][20], cube_y[20][20], cube_z[20][20];
-float length;
+float length;               // 육면체 길이의 절반
+BOOL key_1, key_2, key_3, key_t, key_y, key_Y;
+int key_c;
+
 
 void menu() {
 	std::cout << "-----------명령어------------" << std::endl;
-	std::cout << "-----------------------------" << std::endl;
+	std::cout << "1 : 애니메이션 1" << std::endl;
+	std::cout << "2 : 애니메이션 2" << std::endl;
+	std::cout << "3 : 애니메이션 3" << std::endl;
+	std::cout << "t : 조명 on / off" << std::endl;
+	std::cout << "c : 조명 색 변경" << std::endl;
+	std::cout << "y/Y : 카메라 회전" << std::endl;
+	std::cout << "+/- : 육면체 이동 속도 증가 / 감소" << std::endl;
+	std::cout << "r : 리셋" << std::endl;
+	std::cout << "q : 프로그램 종료" << std::endl;
 }
 
 void reset() {
+	key_1 = key_t = true;
+	key_2 = key_3 = key_y = key_Y = false;
+	key_c = 0;
 	while (1) {
 		std::cout << "가로 세로 크기를 입력해 주세요(최소 5, 최대 20) : ";
 		std::cin >> width_size;
@@ -142,7 +156,10 @@ GLvoid drawScene() {
 			++cube_cnt;
 		}
 	}
-	glUniform3f(lightPosLocation, 0.0, 10.0, 0.0);
+	if(key_t)
+		glUniform3f(lightPosLocation, 0.0, 10.0, 0.0);
+	else
+		glUniform3f(lightPosLocation, 0.0, 0.0, 0.0);
 
 	glutSwapBuffers();
 }
@@ -172,6 +189,33 @@ void timer(int value) {
 
 GLvoid Keyboard(unsigned char key, int x, int y) {
 	switch (key) {
+	case '1':
+		key_1 = true;
+		key_2 = key_3 = false;
+		break;
+	case '2':
+		key_2 = true;
+		key_1 = key_3 = false;
+		break;
+	case '3':
+		key_3 = true;
+		key_2 = key_1 = false;
+		break;
+	case 't':
+		key_t = !key_t;
+		break;
+	case 'c':
+		break;
+	case 'y':
+		key_y = !key_y;
+		break;
+	case 'Y':
+		key_Y = !key_Y;
+		break;
+	case '+':
+		break;
+	case '-':
+		break;
 	case 'r':   // 리셋
 		reset();
 		InitBuffer();
