@@ -33,6 +33,8 @@ std::vector<GLfloat> data[400];
 int window_w, window_h;
 int length_size, width_size;
 float cameraPos_x, cameraPos_y, cameraPos_z;
+float cube_x[20][20], cube_y[20][20], cube_z[20][20];
+float length;
 
 void menu() {
 	std::cout << "-----------명령어------------" << std::endl;
@@ -50,6 +52,13 @@ void reset() {
 			break;
 	}
 	menu();
+	length = (static_cast <float>(4) / (width_size * 2));
+	for (int i = 0; i < length_size; ++i) {
+		for (int j = 0; j < width_size; ++j) {
+			cube_x[i][j] = -2 + length + (length * 2 * j);
+			cube_z[i][j] = -2 + length + (length * 2 * i);
+		}
+	}
 
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
@@ -93,9 +102,9 @@ GLvoid drawScene() {
 	int viewLoc = glGetUniformLocation(shaderProgramID, "view"); //--- 버텍스 세이더에서 뷰잉 변환 행렬 변수값을 받아온다.
 	int projLoc = glGetUniformLocation(shaderProgramID, "projection");
 
-	cameraPos_x = -10.0f;
-	cameraPos_y = 15.0f;
-	cameraPos_z = 10.0f;
+	cameraPos_x = -5.0f;
+	cameraPos_y = 10.0f;
+	cameraPos_z = 5.0f;
 
 	unsigned int objColorLocation = glGetUniformLocation(shaderProgramID, "objectColor");
 	unsigned int lightPosLocation = glGetUniformLocation(shaderProgramID, "lightPos");
@@ -115,7 +124,24 @@ GLvoid drawScene() {
 	pTransform = glm::perspective(glm::radians(50.0f), (float)window_w / (float)window_h, 0.1f, 200.0f);
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, &pTransform[0][0]);
 
-	glUniform3f(objColorLocation, 0.5, 0.5, 0.5);
+
+	glUniform3f(objColorLocation, 1.0, 0.5, 0.0);
+	int cube_cnt = 0;
+	for (int i = 0; i < length_size; ++i) {
+		for (int j = 0; j < width_size; ++j) {
+			glm::mat4 cube = glm::mat4(1.0f);
+			glm::mat4 cube_T = glm::mat4(1.0f);
+			glm::mat4 cube_S = glm::mat4(1.0f);
+			cube_T = glm::translate(cube_T, glm::vec3(cube_x[i][j], cube_y[i][j], cube_z[i][j]));
+			cube_S = glm::scale(cube_S, glm::vec3(length, length, length));
+
+			cube = cube_T * cube_S;
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cube));
+			glBindVertexArray(vao[cube_cnt]);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+			++cube_cnt;
+		}
+	}
 	glUniform3f(lightPosLocation, 0.0, 10.0, 0.0);
 
 	glutSwapBuffers();
