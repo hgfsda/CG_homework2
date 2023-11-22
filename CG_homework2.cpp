@@ -37,7 +37,7 @@ float cube_x[20][20], cube_y[20][20], cube_z[20][20];
 float length;               // 육면체 길이의 절반
 BOOL key_1, key_2, key_3, key_t, key_y, key_Y;
 int key_c;
-
+float light_r[3], light_g[3], light_b[3];
 
 void menu() {
 	std::cout << "-----------명령어------------" << std::endl;
@@ -56,6 +56,9 @@ void reset() {
 	key_1 = key_t = true;
 	key_2 = key_3 = key_y = key_Y = false;
 	key_c = 0;
+	light_r[0] = 1.0, light_g[0] = 1.0, light_b[0] = 1.0;
+	light_r[1] = 1.0, light_g[1] = 0.2, light_b[1] = 0.2;
+	light_r[2] = 0.0, light_g[2] = 0.5, light_b[2] = 0.5;
 	while (1) {
 		std::cout << "가로 세로 크기를 입력해 주세요(최소 5, 최대 20) : ";
 		std::cin >> width_size;
@@ -123,7 +126,7 @@ GLvoid drawScene() {
 	unsigned int objColorLocation = glGetUniformLocation(shaderProgramID, "objectColor");
 	unsigned int lightPosLocation = glGetUniformLocation(shaderProgramID, "lightPos");
 	unsigned int lightColorLocation = glGetUniformLocation(shaderProgramID, "lightColor");
-	glUniform3f(lightColorLocation, 1.0, 1.0, 1.0);
+	glUniform3f(lightColorLocation, light_r[key_c], light_g[key_c], light_b[key_c]);
 	unsigned int viewPosLocation = glGetUniformLocation(shaderProgramID, "viewPos");
 	glUniform3f(viewPosLocation, cameraPos_x, cameraPos_y, cameraPos_z);
 	glm::vec3 cameraPos = glm::vec3(cameraPos_x, cameraPos_y, cameraPos_z);      //--- 카메라 위치
@@ -157,7 +160,7 @@ GLvoid drawScene() {
 		}
 	}
 	if(key_t)
-		glUniform3f(lightPosLocation, 0.0, 10.0, 0.0);
+		glUniform3f(lightPosLocation, 0.0, 1.0, 0.0);
 	else
 		glUniform3f(lightPosLocation, 0.0, 0.0, 0.0);
 
@@ -205,6 +208,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		key_t = !key_t;
 		break;
 	case 'c':
+		key_c = (key_c + 1) % 3;
 		break;
 	case 'y':
 		key_y = !key_y;
