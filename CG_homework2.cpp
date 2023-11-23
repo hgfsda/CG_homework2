@@ -21,16 +21,22 @@ void timer(int value);
 GLvoid drawScene();
 GLvoid Reshape(int w, int h);
 GLvoid Keyboard(unsigned char key, int x, int y);
+GLvoid KeyboardUp(unsigned char key, int x, int y);
 char* filetobuf(const char* file);
 void ReadObj(FILE* path, int index);
 GLvoid Display();
 void animation1_reset();
 
+float floor_xz[36] = {
+	 -100.0, 0.0, -100.0, 0.0, 1.0, 0.0,  -100.0, 0.0, 100.0, 0.0, 1.0, 0.0,  100.0, 0.0, 100.0, 0.0, 1.0, 0.0,
+	 -100.0, 0.0, -100.0, 0.0, 1.0, 0.0,  100.0, 0.0, 100.0, 0.0, 1.0, 0.0,  100.0, 0.0, -100.0, 0.0, 1.0, 0.0
+};
+
 GLuint shaderProgramID; //--- 세이더 프로그램 이름
 GLuint vertexShader; //--- 버텍스 세이더 객체
 GLuint fragmentShader; //--- 프래그먼트 세이더 객체
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
-GLuint vao[400], vbo[400];
+GLuint vao[401], vbo[401];
 std::vector<GLfloat> data[400];
 int window_w, window_h;
 int height_size, width_size;
@@ -38,6 +44,7 @@ float cameraPos_x, cameraPos_y, cameraPos_z;
 float cube_x[20][20], cube_y[20][20], cube_z[20][20];
 float length_width, length_height;               // 육면체 길이의 절반
 BOOL key_1, key_2, key_3, key_t, key_y, key_Y;
+BOOL key_w, key_a, key_s, key_d;
 int key_c;                                       // 현재 선택된 빛의 색깔
 float light_r[3], light_g[3], light_b[3];        // 빛의 색깔
 int case_display;                                // 시점
@@ -45,6 +52,7 @@ float radian_y;                                  // 카메라 공전
 BOOL move_check[20][20];                         // 블록 위, 아래 이동 확인   true 위로 이동 / false 아래 이동
 float animation1_speed[20][20];                  // 애니메이션1 블록 이동속도 0.05 ~ 0.15
 float speed;                                     // 블록 움직이는 속도
+float camera_move_x, camera_move_z;              // 카메라 움직임 위치
 
 void menu() {
 	std::cout << "-----------명령어------------" << std::endl;
@@ -72,12 +80,14 @@ void animation1_reset() {
 void reset() {
 	key_1 = key_t = true;
 	key_2 = key_3 = key_y = key_Y = false;
+	key_w = key_a = key_s = key_d = false;
 	key_c = 0;
 	light_r[0] = 1.0, light_g[0] = 1.0, light_b[0] = 1.0;
 	light_r[1] = 1.0, light_g[1] = 0.2, light_b[1] = 0.2;
 	light_r[2] = 0.0, light_g[2] = 0.5, light_b[2] = 0.5;
 	radian_y = 0;
 	speed = 1;
+	camera_move_x = camera_move_z = 0;
 	while (1) {
 		std::cout << "가로 세로 크기를 입력해 주세요(최소 5, 최대 20) : ";
 		std::cin >> width_size;
@@ -128,6 +138,7 @@ void main(int argc, char** argv)
 	glutDisplayFunc(Display);
 	glutReshapeFunc(Reshape);
 	glutKeyboardFunc(Keyboard);
+	glutKeyboardUpFunc(KeyboardUp);
 	glutTimerFunc(100, timer, 1);
 	glutMainLoop();
 }
@@ -162,9 +173,11 @@ GLvoid drawScene() {
 
 		glm::mat4 vTransform = glm::mat4(1.0f);
 		glm::mat4 R_camera = glm::mat4(1.0f);
+		glm::mat4 T_camera = glm::mat4(1.0f);
 		R_camera = glm::rotate(R_camera, glm::radians(radian_y), glm::vec3(0.0, 1.0, 0.0));
+		T_camera = glm::translate(T_camera, glm::vec3(camera_move_x, 0.0, camera_move_z));
 		vTransform = glm::lookAt(cameraPos, cameraDirection, cameraUp);
-		vTransform = vTransform * R_camera;
+		vTransform = vTransform * T_camera * R_camera;
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &vTransform[0][0]);
 
 		glm::mat4 pTransform = glm::mat4(1.0f);
@@ -216,6 +229,14 @@ GLvoid drawScene() {
 			++cube_cnt;
 		}
 	}
+
+	// 바닥 생성
+	glUniform3f(objColorLocation, 0.5, 0.3, 0);
+	glm::mat4 floor = glm::mat4(1.0f);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(floor));
+	glBindVertexArray(vao[height_size * width_size]);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
 	if(key_t)
 		glUniform3f(lightPosLocation, 0.0, 10.0, 0.0);
 	else
@@ -224,8 +245,8 @@ GLvoid drawScene() {
 
 void InitBuffer()
 {
-	glGenVertexArrays(height_size * width_size, vao);
-	glGenBuffers(height_size * width_size, vbo);
+	glGenVertexArrays(height_size * width_size + 1, vao);
+	glGenBuffers(height_size * width_size + 1, vbo);
 
 	for (int i = 0; i < height_size * width_size; ++i) {
 		glBindVertexArray(vao[i]);
@@ -238,6 +259,16 @@ void InitBuffer()
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 		glEnableVertexAttribArray(1);
 	}
+
+	glBindVertexArray(vao[height_size * width_size]);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[height_size * width_size]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(floor_xz), floor_xz, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 }
 
 void timer(int value) {
@@ -269,6 +300,18 @@ void timer(int value) {
 	}
 	else if(key_2) {}
 	else if(key_3) {}
+	if(key_w) {
+		camera_move_z += 1;
+	}
+	if(key_a) {
+		camera_move_x += 1;
+	}
+	if(key_s) {
+		camera_move_z -= 1;
+	}
+	if(key_d) {
+		camera_move_x -= 1;
+	}
 	Display();
 	glutTimerFunc(100, timer, 1);
 }
@@ -302,6 +345,18 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		key_Y = !key_Y;
 		key_y = false;
 		break;
+	case 'w':
+		key_w = true;
+		break;
+	case 'a':
+		key_a = true;
+		break;
+	case 's':
+		key_s = true;
+		break;
+	case 'd':
+		key_d = true;
+		break;
 	case '+':
 		if (speed < 2)
 			speed += 0.2;
@@ -320,6 +375,23 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		break;
 	}
 	Display();
+}
+
+GLvoid KeyboardUp(unsigned char key, int x, int y) {
+	switch (key) {
+	case 'w':
+		key_w = false;
+	case 'a':
+		key_a = false;
+		break;
+	case 's':
+		key_s = false;
+		break;
+	case 'd':
+		key_d = false;
+		break;
+	}
+	drawScene();
 }
 
 GLvoid Reshape(int w, int h) {
