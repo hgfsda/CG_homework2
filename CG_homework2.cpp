@@ -24,6 +24,7 @@ GLvoid Keyboard(unsigned char key, int x, int y);
 char* filetobuf(const char* file);
 void ReadObj(FILE* path, int index);
 GLvoid Display();
+void animation1_reset();
 
 GLuint shaderProgramID; //--- 세이더 프로그램 이름
 GLuint vertexShader; //--- 버텍스 세이더 객체
@@ -41,6 +42,7 @@ int key_c;                                       // 현재 선택된 빛의 색깔
 float light_r[3], light_g[3], light_b[3];        // 빛의 색깔
 int case_display;                                // 시점
 float radian_y;                                  // 카메라 공전
+BOOL move_check[20][20];                         // 블록 위, 아래 이동 확인   true 위로 이동 / false 아래 이동
 
 void menu() {
 	std::cout << "-----------명령어------------" << std::endl;
@@ -53,6 +55,15 @@ void menu() {
 	std::cout << "+/- : 육면체 이동 속도 증가 / 감소" << std::endl;
 	std::cout << "r : 리셋" << std::endl;
 	std::cout << "q : 프로그램 종료" << std::endl;
+}
+
+void animation1_reset() {
+	for (int i = 0; i < height_size; ++i) {
+		for (int j = 0; j < width_size; ++j) {
+			cube_y[i][j] = rand() % 401 * 0.01;
+			move_check[i][j] = true;
+		}
+	}
 }
 
 void reset() {
@@ -73,14 +84,15 @@ void reset() {
 			break;
 	}
 	menu();
-	length_width = (static_cast <float>(4) / (width_size * 2));
-	length_height = (static_cast <float>(4) / (height_size * 2));
+	length_width = (static_cast <float>(10) / (width_size * 2));
+	length_height = (static_cast <float>(10) / (height_size * 2));
 	for (int i = 0; i < height_size; ++i) {
 		for (int j = 0; j < width_size; ++j) {
-			cube_x[i][j] = -2 + length_width + (length_width * 2 * j);
-			cube_z[i][j] = -2 + length_height + (length_height * 2 * i);
+			cube_x[i][j] = -5 + length_width + (length_width * 2 * j);
+			cube_z[i][j] = -5 + length_height + (length_height * 2 * i);
 		}
 	}
+	animation1_reset();
 
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
@@ -136,9 +148,9 @@ GLvoid drawScene() {
 	int viewLoc = glGetUniformLocation(shaderProgramID, "view"); //--- 버텍스 세이더에서 뷰잉 변환 행렬 변수값을 받아온다.
 	int projLoc = glGetUniformLocation(shaderProgramID, "projection");
 	if (case_display == 0) {
-		cameraPos_x = -5.0f;
-		cameraPos_y = 10.0f;
-		cameraPos_z = 5.0f;
+		cameraPos_x = -10.0f;
+		cameraPos_y = 15.0f;
+		cameraPos_z = 10.0f;
 
 		glm::vec3 cameraPos = glm::vec3(cameraPos_x, cameraPos_y, cameraPos_z);      //--- 카메라 위치
 		glm::vec3 cameraDirection = glm::vec3(0.0f, 0.0f, 0.0f); //--- 카메라 바라보는 방향
@@ -191,7 +203,7 @@ GLvoid drawScene() {
 			glm::mat4 cube_T = glm::mat4(1.0f);
 			glm::mat4 cube_S = glm::mat4(1.0f);
 			cube_T = glm::translate(cube_T, glm::vec3(cube_x[i][j], cube_y[i][j], cube_z[i][j]));
-			cube_S = glm::scale(cube_S, glm::vec3(length_width, 2 * cube_y[i][j], length_height));
+			cube_S = glm::scale(cube_S, glm::vec3(length_width, cube_y[i][j], length_height));
 
 			cube = cube_T * cube_S;
 			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cube));
@@ -201,7 +213,7 @@ GLvoid drawScene() {
 		}
 	}
 	if(key_t)
-		glUniform3f(lightPosLocation, 0.0, 1.0, 0.0);
+		glUniform3f(lightPosLocation, 0.0, 10.0, 0.0);
 	else
 		glUniform3f(lightPosLocation, 0.0, 0.0, 0.0);
 }
@@ -235,6 +247,24 @@ void timer(int value) {
 		if (radian_y <= -360.0f)
 			radian_y = 0;
 	}
+	if(key_1) {
+		for (int i = 0; i < height_size; ++i) {
+			for (int j = 0; j < width_size; ++j) {
+				if(move_check[i][j] == true) {
+					cube_y[i][j] += 0.05;
+					if (cube_y[i][j] >= 5.0)
+						move_check[i][j] = false;
+				}
+				else {
+					cube_y[i][j] -= 0.05;
+					if (cube_y[i][j] <= 0.0)
+						move_check[i][j] = true;
+				}
+			}
+		}
+	}
+	else if(key_2) {}
+	else if(key_3) {}
 	Display();
 	glutTimerFunc(100, timer, 1);
 }
