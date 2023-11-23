@@ -23,6 +23,7 @@ GLvoid Reshape(int w, int h);
 GLvoid Keyboard(unsigned char key, int x, int y);
 char* filetobuf(const char* file);
 void ReadObj(FILE* path, int index);
+GLvoid Display();
 
 GLuint shaderProgramID; //--- 세이더 프로그램 이름
 GLuint vertexShader; //--- 버텍스 세이더 객체
@@ -36,8 +37,9 @@ float cameraPos_x, cameraPos_y, cameraPos_z;
 float cube_x[20][20], cube_y[20][20], cube_z[20][20];
 float length_width, length_height;               // 육면체 길이의 절반
 BOOL key_1, key_2, key_3, key_t, key_y, key_Y;
-int key_c;
-float light_r[3], light_g[3], light_b[3];
+int key_c;                                       // 현재 선택된 빛의 색깔
+float light_r[3], light_g[3], light_b[3];        // 빛의 색깔
+int case_display;                                // 시점
 
 void menu() {
 	std::cout << "-----------명령어------------" << std::endl;
@@ -105,24 +107,66 @@ void main(int argc, char** argv)
 	glewInit();
 	make_shaderProgram();
 	InitBuffer();
-	glutDisplayFunc(drawScene);
+	glutDisplayFunc(Display);
 	glutReshapeFunc(Reshape);
 	glutKeyboardFunc(Keyboard);
 	glutTimerFunc(100, timer, 1);
 	glutMainLoop();
 }
 
-GLvoid drawScene() {
+GLvoid Display() {
 	glClearColor(0.1, 0.1, 0.3, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	case_display = 0;
+	glViewport(0, 0, window_w, window_h);
+	drawScene();
+	case_display = 1;
+	glViewport(650, 450, 100, 100);
+	drawScene();
+
+	glutSwapBuffers();
+}
+
+GLvoid drawScene() {
 	glUseProgram(shaderProgramID);
 	int modelLoc = glGetUniformLocation(shaderProgramID, "model"); //--- 버텍스 세이더에서 모델링 변환 행렬 변수값을 받아온다.
 	int viewLoc = glGetUniformLocation(shaderProgramID, "view"); //--- 버텍스 세이더에서 뷰잉 변환 행렬 변수값을 받아온다.
 	int projLoc = glGetUniformLocation(shaderProgramID, "projection");
+	if (case_display == 0) {
+		cameraPos_x = -5.0f;
+		cameraPos_y = 10.0f;
+		cameraPos_z = 5.0f;
 
-	cameraPos_x = -5.0f;
-	cameraPos_y = 10.0f;
-	cameraPos_z = 5.0f;
+		glm::vec3 cameraPos = glm::vec3(cameraPos_x, cameraPos_y, cameraPos_z);      //--- 카메라 위치
+		glm::vec3 cameraDirection = glm::vec3(0.0f, 0.0f, 0.0f); //--- 카메라 바라보는 방향
+		glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);        //--- 카메라 위쪽 방향
+
+		glm::mat4 vTransform = glm::mat4(1.0f);
+		vTransform = glm::lookAt(cameraPos, cameraDirection, cameraUp);
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &vTransform[0][0]);
+
+		glm::mat4 pTransform = glm::mat4(1.0f);
+		pTransform = glm::perspective(glm::radians(50.0f), (float)window_w / (float)window_h, 0.1f, 200.0f);
+		glUniformMatrix4fv(projLoc, 1, GL_FALSE, &pTransform[0][0]);
+	}
+	else if (case_display == 1) {
+		cameraPos_x = 0.0f;
+		cameraPos_y = 3.0f;
+		cameraPos_z = 0.0f;
+
+		glm::vec3 cameraPos = glm::vec3(cameraPos_x, cameraPos_y, cameraPos_z);      //--- 카메라 위치
+		glm::vec3 cameraDirection = glm::vec3(0.0f, 0.0f, 0.0f); //--- 카메라 바라보는 방향
+		glm::vec3 cameraUp = glm::vec3(0.0f, 0.0f, -1.0f);        //--- 카메라 위쪽 방향
+
+		glm::mat4 vTransform = glm::mat4(1.0f);
+		vTransform = glm::lookAt(cameraPos, cameraDirection, cameraUp);
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &vTransform[0][0]);
+
+		glm::mat4 pTransform = glm::mat4(1.0f);
+		pTransform = glm::perspective(glm::radians(50.0f), (float)window_w / (float)window_h, 0.1f, 200.0f);
+		glUniformMatrix4fv(projLoc, 1, GL_FALSE, &pTransform[0][0]);
+	}
 
 	unsigned int objColorLocation = glGetUniformLocation(shaderProgramID, "objectColor");
 	unsigned int lightPosLocation = glGetUniformLocation(shaderProgramID, "lightPos");
@@ -130,18 +174,6 @@ GLvoid drawScene() {
 	glUniform3f(lightColorLocation, light_r[key_c], light_g[key_c], light_b[key_c]);
 	unsigned int viewPosLocation = glGetUniformLocation(shaderProgramID, "viewPos");
 	glUniform3f(viewPosLocation, cameraPos_x, cameraPos_y, cameraPos_z);
-	glm::vec3 cameraPos = glm::vec3(cameraPos_x, cameraPos_y, cameraPos_z);      //--- 카메라 위치
-	glm::vec3 cameraDirection = glm::vec3(0.0f, 0.0f, 0.0f); //--- 카메라 바라보는 방향
-	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);        //--- 카메라 위쪽 방향
-
-	glm::mat4 vTransform = glm::mat4(1.0f);
-	vTransform = glm::lookAt(cameraPos, cameraDirection, cameraUp);
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &vTransform[0][0]);
-
-	glm::mat4 pTransform = glm::mat4(1.0f);
-	pTransform = glm::perspective(glm::radians(50.0f), (float)window_w / (float)window_h, 0.1f, 200.0f);
-	glUniformMatrix4fv(projLoc, 1, GL_FALSE, &pTransform[0][0]);
-
 
 	glUniform3f(objColorLocation, 1.0, 0.5, 0.0);
 	int cube_cnt = 0;
@@ -164,8 +196,6 @@ GLvoid drawScene() {
 		glUniform3f(lightPosLocation, 0.0, 1.0, 0.0);
 	else
 		glUniform3f(lightPosLocation, 0.0, 0.0, 0.0);
-
-	glutSwapBuffers();
 }
 
 void InitBuffer()
@@ -187,7 +217,7 @@ void InitBuffer()
 }
 
 void timer(int value) {
-	drawScene();
+	Display();
 	glutTimerFunc(100, timer, 1);
 }
 
@@ -230,7 +260,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		glutLeaveMainLoop();
 		break;
 	}
-	drawScene();
+	Display();
 }
 
 GLvoid Reshape(int w, int h) {
