@@ -22,6 +22,8 @@ GLvoid drawScene();
 GLvoid Reshape(int w, int h);
 GLvoid Keyboard(unsigned char key, int x, int y);
 GLvoid KeyboardUp(unsigned char key, int x, int y);
+void Mouse(int button, int state, int x, int y);
+void Motion(int x, int y);
 char* filetobuf(const char* file);
 void ReadObj(FILE* path, int index);
 GLvoid Display();
@@ -53,6 +55,8 @@ BOOL move_check[20][20];                         // 블록 위, 아래 이동 확인   tr
 float animation1_speed[20][20];                  // 애니메이션1 블록 이동속도 0.05 ~ 0.15
 float speed;                                     // 블록 움직이는 속도
 float camera_move_x, camera_move_z;              // 카메라 움직임 위치
+float cameraDirection_x, cameraDirection_y;      // 카메라 바라보는 방향
+BOOL left_button;                                
 
 void menu() {
 	std::cout << "-----------명령어------------" << std::endl;
@@ -63,6 +67,7 @@ void menu() {
 	std::cout << "c : 조명 색 변경" << std::endl;
 	std::cout << "y/Y : 카메라 회전" << std::endl;
 	std::cout << "+/- : 육면체 이동 속도 증가 / 감소" << std::endl;
+	std::cout << "w/a/s/d : 카메라 이동" << std::endl;
 	std::cout << "r : 리셋" << std::endl;
 	std::cout << "q : 프로그램 종료" << std::endl;
 }
@@ -88,6 +93,8 @@ void reset() {
 	radian_y = 0;
 	speed = 1;
 	camera_move_x = camera_move_z = 0;
+	cameraDirection_x = cameraDirection_y = 0;
+	left_button = false;
 	while (1) {
 		std::cout << "가로 세로 크기를 입력해 주세요(최소 5, 최대 20) : ";
 		std::cin >> width_size;
@@ -139,12 +146,14 @@ void main(int argc, char** argv)
 	glutReshapeFunc(Reshape);
 	glutKeyboardFunc(Keyboard);
 	glutKeyboardUpFunc(KeyboardUp);
+	glutMouseFunc(Mouse);
+	glutMotionFunc(Motion);
 	glutTimerFunc(100, timer, 1);
 	glutMainLoop();
 }
 
 GLvoid Display() {
-	glClearColor(0.1, 0.1, 0.3, 1.0);
+	glClearColor(0.2, 0.6, 0.9, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	case_display = 0;
@@ -168,7 +177,7 @@ GLvoid drawScene() {
 		cameraPos_z = 10.0f;
 
 		glm::vec3 cameraPos = glm::vec3(cameraPos_x, cameraPos_y, cameraPos_z);      //--- 카메라 위치
-		glm::vec3 cameraDirection = glm::vec3(0.0f, 0.0f, 0.0f); //--- 카메라 바라보는 방향
+		glm::vec3 cameraDirection = glm::vec3(cameraDirection_x, cameraDirection_y, 0.0f); //--- 카메라 바라보는 방향
 		glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);        //--- 카메라 위쪽 방향
 
 		glm::mat4 vTransform = glm::mat4(1.0f);
@@ -231,7 +240,7 @@ GLvoid drawScene() {
 	}
 
 	// 바닥 생성
-	glUniform3f(objColorLocation, 0.5, 0.3, 0);
+	glUniform3f(objColorLocation, 0.1, 0.1, 0.3);
 	glm::mat4 floor = glm::mat4(1.0f);
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(floor));
 	glBindVertexArray(vao[height_size * width_size]);
@@ -392,6 +401,40 @@ GLvoid KeyboardUp(unsigned char key, int x, int y) {
 		break;
 	}
 	drawScene();
+}
+
+float prev_mouse_x, prev_mouse_y;
+void Mouse(int button, int state, int x, int y) {
+	float normalized_x, normalized_y;
+
+	normalized_x = (2.0 * x / 800) - 1.0;
+	normalized_y = 1.0 - (2.0 * y / 600);
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+		left_button = true;
+		prev_mouse_x = normalized_x;  // 저장된 이전 마우스 위치
+		prev_mouse_y = normalized_y;
+	}
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+		left_button = false;
+	}
+}
+
+void Motion(int x, int y) {
+	float normalized_x, normalized_y;
+
+	normalized_x = (2.0 * x / 800) - 1.0;
+	normalized_y = 1.0 - (2.0 * y / 600);
+	if (left_button == true) {
+		float delta_x = normalized_x - prev_mouse_x;
+		float delta_y = normalized_y - prev_mouse_y;
+
+		cameraDirection_x += delta_x * 5;
+		cameraDirection_y += delta_y * 5;
+
+		prev_mouse_x = normalized_x;
+		prev_mouse_y = normalized_y;
+	}
+	Display();
 }
 
 GLvoid Reshape(int w, int h) {
