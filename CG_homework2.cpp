@@ -40,6 +40,7 @@ BOOL key_1, key_2, key_3, key_t, key_y, key_Y;
 int key_c;                                       // 현재 선택된 빛의 색깔
 float light_r[3], light_g[3], light_b[3];        // 빛의 색깔
 int case_display;                                // 시점
+float radian_y;                                  // 카메라 공전
 
 void menu() {
 	std::cout << "-----------명령어------------" << std::endl;
@@ -61,6 +62,7 @@ void reset() {
 	light_r[0] = 1.0, light_g[0] = 1.0, light_b[0] = 1.0;
 	light_r[1] = 1.0, light_g[1] = 0.2, light_b[1] = 0.2;
 	light_r[2] = 0.0, light_g[2] = 0.5, light_b[2] = 0.5;
+	radian_y = 0;
 	while (1) {
 		std::cout << "가로 세로 크기를 입력해 주세요(최소 5, 최대 20) : ";
 		std::cin >> width_size;
@@ -143,7 +145,10 @@ GLvoid drawScene() {
 		glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);        //--- 카메라 위쪽 방향
 
 		glm::mat4 vTransform = glm::mat4(1.0f);
+		glm::mat4 R_camera = glm::mat4(1.0f);
+		R_camera = glm::rotate(R_camera, glm::radians(radian_y), glm::vec3(0.0, 1.0, 0.0));
 		vTransform = glm::lookAt(cameraPos, cameraDirection, cameraUp);
+		vTransform = vTransform * R_camera;
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &vTransform[0][0]);
 
 		glm::mat4 pTransform = glm::mat4(1.0f);
@@ -171,7 +176,10 @@ GLvoid drawScene() {
 	unsigned int objColorLocation = glGetUniformLocation(shaderProgramID, "objectColor");
 	unsigned int lightPosLocation = glGetUniformLocation(shaderProgramID, "lightPos");
 	unsigned int lightColorLocation = glGetUniformLocation(shaderProgramID, "lightColor");
-	glUniform3f(lightColorLocation, light_r[key_c], light_g[key_c], light_b[key_c]);
+	if(key_t)
+		glUniform3f(lightColorLocation, light_r[key_c], light_g[key_c], light_b[key_c]);
+	else
+		glUniform3f(lightColorLocation, 1.0, 1.0, 1.0);
 	unsigned int viewPosLocation = glGetUniformLocation(shaderProgramID, "viewPos");
 	glUniform3f(viewPosLocation, cameraPos_x, cameraPos_y, cameraPos_z);
 
@@ -183,7 +191,7 @@ GLvoid drawScene() {
 			glm::mat4 cube_T = glm::mat4(1.0f);
 			glm::mat4 cube_S = glm::mat4(1.0f);
 			cube_T = glm::translate(cube_T, glm::vec3(cube_x[i][j], cube_y[i][j], cube_z[i][j]));
-			cube_S = glm::scale(cube_S, glm::vec3(length_width, length_height, length_height));
+			cube_S = glm::scale(cube_S, glm::vec3(length_width, 2 * cube_y[i][j], length_height));
 
 			cube = cube_T * cube_S;
 			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cube));
@@ -217,6 +225,16 @@ void InitBuffer()
 }
 
 void timer(int value) {
+	if (key_y) {
+		radian_y += 10.0f;
+		if (radian_y >= 360.0f)
+			radian_y = 0;
+	}
+	if (key_Y) {
+		radian_y -= 10.0f;
+		if (radian_y <= -360.0f)
+			radian_y = 0;
+	}
 	Display();
 	glutTimerFunc(100, timer, 1);
 }
@@ -243,9 +261,11 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		break;
 	case 'y':
 		key_y = !key_y;
+		key_Y = false;
 		break;
 	case 'Y':
 		key_Y = !key_Y;
+		key_y = false;
 		break;
 	case '+':
 		break;
