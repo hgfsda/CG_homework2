@@ -43,6 +43,7 @@ float light_r[3], light_g[3], light_b[3];        // 빛의 색깔
 int case_display;                                // 시점
 float radian_y;                                  // 카메라 공전
 BOOL move_check[20][20];                         // 블록 위, 아래 이동 확인   true 위로 이동 / false 아래 이동
+float speed;                                     // 블록 움직이는 속도
 
 void menu() {
 	std::cout << "-----------명령어------------" << std::endl;
@@ -74,6 +75,7 @@ void reset() {
 	light_r[1] = 1.0, light_g[1] = 0.2, light_b[1] = 0.2;
 	light_r[2] = 0.0, light_g[2] = 0.5, light_b[2] = 0.5;
 	radian_y = 0;
+	speed = 1;
 	while (1) {
 		std::cout << "가로 세로 크기를 입력해 주세요(최소 5, 최대 20) : ";
 		std::cin >> width_size;
@@ -251,12 +253,12 @@ void timer(int value) {
 		for (int i = 0; i < height_size; ++i) {
 			for (int j = 0; j < width_size; ++j) {
 				if(move_check[i][j] == true) {
-					cube_y[i][j] += 0.05;
+					cube_y[i][j] += 0.05 * speed;
 					if (cube_y[i][j] >= 5.0)
 						move_check[i][j] = false;
 				}
 				else {
-					cube_y[i][j] -= 0.05;
+					cube_y[i][j] -= 0.05 * speed;
 					if (cube_y[i][j] <= 0.0)
 						move_check[i][j] = true;
 				}
@@ -298,8 +300,12 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		key_y = false;
 		break;
 	case '+':
+		if (speed < 2)
+			speed += 0.2;
 		break;
 	case '-':
+		if (speed > 0.5)
+			speed -= 0.2;
 		break;
 	case 'r':   // 리셋
 		reset();
