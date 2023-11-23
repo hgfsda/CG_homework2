@@ -31,10 +31,10 @@ GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
 GLuint vao[400], vbo[400];
 std::vector<GLfloat> data[400];
 int window_w, window_h;
-int length_size, width_size;
+int height_size, width_size;
 float cameraPos_x, cameraPos_y, cameraPos_z;
 float cube_x[20][20], cube_y[20][20], cube_z[20][20];
-float length;               // 육면체 길이의 절반
+float length_width, length_height;               // 육면체 길이의 절반
 BOOL key_1, key_2, key_3, key_t, key_y, key_Y;
 int key_c;
 float light_r[3], light_g[3], light_b[3];
@@ -62,18 +62,19 @@ void reset() {
 	while (1) {
 		std::cout << "가로 세로 크기를 입력해 주세요(최소 5, 최대 20) : ";
 		std::cin >> width_size;
-		std::cin >> length_size;
-		if (!(5 <= length_size && 20 >= length_size && 5 <= width_size && 20 >= width_size))
+		std::cin >> height_size;
+		if (!(5 <= height_size && 20 >= height_size && 5 <= width_size && 20 >= width_size))
 			std::cout << "범위에 벗어났습니다." << std::endl;
 		else
 			break;
 	}
 	menu();
-	length = (static_cast <float>(4) / (width_size * 2));
-	for (int i = 0; i < length_size; ++i) {
+	length_width = (static_cast <float>(4) / (width_size * 2));
+	length_height = (static_cast <float>(4) / (height_size * 2));
+	for (int i = 0; i < height_size; ++i) {
 		for (int j = 0; j < width_size; ++j) {
-			cube_x[i][j] = -2 + length + (length * 2 * j);
-			cube_z[i][j] = -2 + length + (length * 2 * i);
+			cube_x[i][j] = -2 + length_width + (length_width * 2 * j);
+			cube_z[i][j] = -2 + length_height + (length_height * 2 * i);
 		}
 	}
 
@@ -83,7 +84,7 @@ void reset() {
 	glEnable(GL_LIGHT0);
 	const char* cube_obj = "cube.obj";
 	FILE* file_cube[400];
-	for (int i = 0; i < length_size * width_size; ++i) {
+	for (int i = 0; i < height_size * width_size; ++i) {
 		file_cube[i] = fopen(cube_obj, "r");
 		ReadObj(file_cube[i], i);
 		fclose(file_cube[i]);
@@ -144,13 +145,13 @@ GLvoid drawScene() {
 
 	glUniform3f(objColorLocation, 1.0, 0.5, 0.0);
 	int cube_cnt = 0;
-	for (int i = 0; i < length_size; ++i) {
+	for (int i = 0; i < height_size; ++i) {
 		for (int j = 0; j < width_size; ++j) {
 			glm::mat4 cube = glm::mat4(1.0f);
 			glm::mat4 cube_T = glm::mat4(1.0f);
 			glm::mat4 cube_S = glm::mat4(1.0f);
 			cube_T = glm::translate(cube_T, glm::vec3(cube_x[i][j], cube_y[i][j], cube_z[i][j]));
-			cube_S = glm::scale(cube_S, glm::vec3(length, length, length));
+			cube_S = glm::scale(cube_S, glm::vec3(length_width, length_height, length_height));
 
 			cube = cube_T * cube_S;
 			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cube));
@@ -169,10 +170,10 @@ GLvoid drawScene() {
 
 void InitBuffer()
 {
-	glGenVertexArrays(length_size * width_size, vao);
-	glGenBuffers(length_size * width_size, vbo);
+	glGenVertexArrays(height_size * width_size, vao);
+	glGenBuffers(height_size * width_size, vbo);
 
-	for (int i = 0; i < length_size * width_size; ++i) {
+	for (int i = 0; i < height_size * width_size; ++i) {
 		glBindVertexArray(vao[i]);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[i]);
 		glBufferData(GL_ARRAY_BUFFER, data[i].size() * sizeof(GLfloat), data[i].data(), GL_STATIC_DRAW);
