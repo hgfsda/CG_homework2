@@ -43,6 +43,7 @@ float light_r[3], light_g[3], light_b[3];        // 빛의 색깔
 int case_display;                                // 시점
 float radian_y;                                  // 카메라 공전
 BOOL move_check[20][20];                         // 블록 위, 아래 이동 확인   true 위로 이동 / false 아래 이동
+float animation1_speed[20][20];                  // 애니메이션1 블록 이동속도 0.05 ~ 0.15
 float speed;                                     // 블록 움직이는 속도
 
 void menu() {
@@ -62,6 +63,7 @@ void animation1_reset() {
 	for (int i = 0; i < height_size; ++i) {
 		for (int j = 0; j < width_size; ++j) {
 			cube_y[i][j] = rand() % 401 * 0.01;
+			animation1_speed[i][j] = (rand() % 11 + 5) * 0.01;
 			move_check[i][j] = true;
 		}
 	}
@@ -253,12 +255,12 @@ void timer(int value) {
 		for (int i = 0; i < height_size; ++i) {
 			for (int j = 0; j < width_size; ++j) {
 				if(move_check[i][j] == true) {
-					cube_y[i][j] += 0.05 * speed;
+					cube_y[i][j] += animation1_speed[i][j] * speed;
 					if (cube_y[i][j] >= 5.0)
 						move_check[i][j] = false;
 				}
 				else {
-					cube_y[i][j] -= 0.05 * speed;
+					cube_y[i][j] -= animation1_speed[i][j] * speed;
 					if (cube_y[i][j] <= 0.0)
 						move_check[i][j] = true;
 				}
@@ -276,6 +278,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	case '1':
 		key_1 = true;
 		key_2 = key_3 = false;
+		animation1_reset();
 		break;
 	case '2':
 		key_2 = true;
