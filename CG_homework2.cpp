@@ -18,6 +18,7 @@ void InitBuffer();
 void reset();
 void menu();
 void timer(int value);
+void animation_timer(int value);
 GLvoid drawScene();
 GLvoid Reshape(int w, int h);
 GLvoid Keyboard(unsigned char key, int x, int y);
@@ -28,6 +29,7 @@ char* filetobuf(const char* file);
 void ReadObj(FILE* path, int index);
 GLvoid Display();
 void animation1_reset();
+void animation2_reset();
 
 float floor_xz[36] = {
 	 -100.0, 0.0, -100.0, 0.0, 1.0, 0.0,  -100.0, 0.0, 100.0, 0.0, 1.0, 0.0,  100.0, 0.0, 100.0, 0.0, 1.0, 0.0,
@@ -57,6 +59,7 @@ float speed;                                     // 블록 움직이는 속도
 float camera_move_x, camera_move_z;              // 카메라 움직임 위치
 float cameraDirection_x, cameraDirection_y;      // 카메라 바라보는 방향
 BOOL left_button;                                
+int animation_speed;                             // 애니메이션 스피드
 
 void menu() {
 	std::cout << "-----------명령어------------" << std::endl;
@@ -82,6 +85,18 @@ void animation1_reset() {
 	}
 }
 
+void animation2_reset() {
+	float cnt = 0;
+	for (int i = 0; i < height_size; ++i) {
+		for (int j = 0; j < width_size; ++j) {
+			cube_y[i][j] = cnt;
+			animation1_speed[i][j] = 0.1;
+			move_check[i][j] = true;
+		}
+		cnt += 0.1;
+	}
+}
+
 void reset() {
 	key_1 = key_t = true;
 	key_2 = key_3 = key_y = key_Y = false;
@@ -95,6 +110,7 @@ void reset() {
 	camera_move_x = camera_move_z = 0;
 	cameraDirection_x = cameraDirection_y = 0;
 	left_button = false;
+	animation_speed = 100;
 	while (1) {
 		std::cout << "가로 세로 크기를 입력해 주세요(최소 5, 최대 20) : ";
 		std::cin >> width_size;
@@ -149,6 +165,7 @@ void main(int argc, char** argv)
 	glutMouseFunc(Mouse);
 	glutMotionFunc(Motion);
 	glutTimerFunc(100, timer, 1);
+	glutTimerFunc(animation_speed, animation_timer, 1);
 	glutMainLoop();
 }
 
@@ -280,7 +297,29 @@ void InitBuffer()
 	glEnableVertexAttribArray(1);
 }
 
+void animation_timer(int value) {
+	for (int i = 0; i < height_size; ++i) {
+		for (int j = 0; j < width_size; ++j) {
+			if (move_check[i][j] == true) {
+				cube_y[i][j] += animation1_speed[i][j];
+				if (cube_y[i][j] >= 5.0) {
+					cube_y[i][j] -= animation1_speed[i][j];
+					move_check[i][j] = false;
+				}
+			}
+			else {
+				cube_y[i][j] -= animation1_speed[i][j];
+				if (cube_y[i][j] <= 0.0)
+					move_check[i][j] = true;
+			}
+		}
+	}
+	Display();
+	glutTimerFunc(animation_speed, animation_timer, 1);
+}
+
 void timer(int value) {
+
 	if (key_y) {
 		radian_y += 10.0f;
 		if (radian_y >= 360.0f)
@@ -291,34 +330,16 @@ void timer(int value) {
 		if (radian_y <= -360.0f)
 			radian_y = 0;
 	}
-	if(key_1) {
-		for (int i = 0; i < height_size; ++i) {
-			for (int j = 0; j < width_size; ++j) {
-				if(move_check[i][j] == true) {
-					cube_y[i][j] += animation1_speed[i][j] * speed;
-					if (cube_y[i][j] >= 5.0)
-						move_check[i][j] = false;
-				}
-				else {
-					cube_y[i][j] -= animation1_speed[i][j] * speed;
-					if (cube_y[i][j] <= 0.0)
-						move_check[i][j] = true;
-				}
-			}
-		}
-	}
-	else if(key_2) {}
-	else if(key_3) {}
-	if(key_w) {
+	if (key_w) {
 		camera_move_z += 1;
 	}
-	if(key_a) {
+	if (key_a) {
 		camera_move_x += 1;
 	}
-	if(key_s) {
+	if (key_s) {
 		camera_move_z -= 1;
 	}
-	if(key_d) {
+	if (key_d) {
 		camera_move_x -= 1;
 	}
 	Display();
@@ -335,6 +356,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	case '2':
 		key_2 = true;
 		key_1 = key_3 = false;
+		animation2_reset();
 		break;
 	case '3':
 		key_3 = true;
@@ -367,12 +389,12 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		key_d = true;
 		break;
 	case '+':
-		if (speed < 2)
-			speed += 0.2;
+		if (animation_speed > 50)
+			animation_speed -= 10;
 		break;
 	case '-':
-		if (speed > 0.5)
-			speed -= 0.2;
+		if (animation_speed < 200)
+			animation_speed += 10;
 		break;
 	case 'r':   // 리셋
 		reset();
@@ -419,6 +441,7 @@ void Mouse(int button, int state, int x, int y) {
 	}
 }
 
+// 카메라 회전으로 바라보는 방향으로 이동할 수 있게
 void Motion(int x, int y) {
 	float normalized_x, normalized_y;
 
