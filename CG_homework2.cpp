@@ -228,14 +228,14 @@ GLvoid drawScene() {
 
 		glm::vec3 cameraPos = glm::vec3(cameraPos_x, cameraPos_y, cameraPos_z);      //--- 카메라 위치
 		glm::vec3 cameraDirection = glm::vec3(0.0f, 0.0f, 0.0f); //--- 카메라 바라보는 방향
-		glm::vec3 cameraUp = glm::vec3(0.0f, 0.0f, -1.0f);        //--- 카메라 위쪽 방향
+		glm::vec3 cameraUp = glm::vec3(0.0f, 0.0f, 1.0f);        //--- 카메라 위쪽 방향
 
 		glm::mat4 vTransform = glm::mat4(1.0f);
 		vTransform = glm::lookAt(cameraPos, cameraDirection, cameraUp);
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &vTransform[0][0]);
 
 		glm::mat4 pTransform = glm::mat4(1.0f);
-		pTransform = glm::perspective(glm::radians(50.0f), (float)window_w / (float)window_h, 0.1f, 200.0f);
+		pTransform = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, -5.0f, 5.0f);
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, &pTransform[0][0]);
 	}
 
@@ -275,7 +275,7 @@ GLvoid drawScene() {
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	if(key_t)
-		glUniform3f(lightPosLocation, 0.0, 15.0, 0.0);
+		glUniform3f(lightPosLocation, 0.0, 30.0, 0.0);
 	else
 		glUniform3f(lightPosLocation, 0.0, 0.0, 0.0);
 }
