@@ -53,7 +53,7 @@ int key_c;                                       // 현재 선택된 빛의 색깔
 float light_r[3], light_g[3], light_b[3];        // 빛의 색깔
 int case_display;                                // 시점
 float radian_y;                                  // 카메라 공전
-BOOL move_check[20][20];                         // 블록 위, 아래 이동 확인   true 위로 이동 / false 아래 이동
+int move_check[20][20];                         // 블록 위, 아래 이동 확인   0 위로 이동 / 1 아래 이동
 float animation1_speed[20][20];                  // 애니메이션1 블록 이동속도 0.05 ~ 0.15
 float speed;                                     // 블록 움직이는 속도
 float camera_move_x, camera_move_z;              // 카메라 움직임 위치
@@ -80,7 +80,7 @@ void animation1_reset() {
 		for (int j = 0; j < width_size; ++j) {
 			cube_y[i][j] = rand() % 401 * 0.01;
 			animation1_speed[i][j] = (rand() % 11 + 5) * 0.01;
-			move_check[i][j] = true;
+			move_check[i][j] = 0;
 		}
 	}
 }
@@ -91,10 +91,21 @@ void animation2_reset() {
 		for (int j = 0; j < width_size; ++j) {
 			cube_y[i][j] = cnt;
 			animation1_speed[i][j] = 0.1;
-			move_check[i][j] = true;
+			move_check[i][j] = 0;
 		}
-		cnt += 0.1;
+		cnt += 0.5;
 	}
+}
+
+void animation3_reset() {
+	for (int i = 0; i < height_size; ++i) {
+		for (int j = 0; j < width_size; ++j) {
+			cube_y[i][j] = 0;
+			move_check[i][j] = 2;
+			animation1_speed[i][j] = 0.1;
+		}
+	}
+	move_check[0][0] = 0;
 }
 
 void reset() {
@@ -190,7 +201,7 @@ GLvoid drawScene() {
 	int projLoc = glGetUniformLocation(shaderProgramID, "projection");
 	if (case_display == 0) {
 		cameraPos_x = -10.0f;
-		cameraPos_y = 15.0f;
+		cameraPos_y = 20.0f;
 		cameraPos_z = 10.0f;
 
 		glm::vec3 cameraPos = glm::vec3(cameraPos_x, cameraPos_y, cameraPos_z);      //--- 카메라 위치
@@ -264,7 +275,7 @@ GLvoid drawScene() {
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	if(key_t)
-		glUniform3f(lightPosLocation, 0.0, 10.0, 0.0);
+		glUniform3f(lightPosLocation, 0.0, 15.0, 0.0);
 	else
 		glUniform3f(lightPosLocation, 0.0, 0.0, 0.0);
 }
@@ -298,19 +309,45 @@ void InitBuffer()
 }
 
 void animation_timer(int value) {
-	for (int i = 0; i < height_size; ++i) {
-		for (int j = 0; j < width_size; ++j) {
-			if (move_check[i][j] == true) {
-				cube_y[i][j] += animation1_speed[i][j];
-				if (cube_y[i][j] >= 5.0) {
+	if (key_1 || key_2) {
+		for (int i = 0; i < height_size; ++i) {
+			for (int j = 0; j < width_size; ++j) {
+				if (move_check[i][j] == 0) {
+					cube_y[i][j] += animation1_speed[i][j];
+					if (cube_y[i][j] >= 10.0) {
+						cube_y[i][j] -= animation1_speed[i][j];
+						move_check[i][j] = 1;
+					}
+				}
+				else if (move_check[i][j] == 1) {
 					cube_y[i][j] -= animation1_speed[i][j];
-					move_check[i][j] = false;
+					if (cube_y[i][j] <= 0.0)
+						move_check[i][j] = 0;
 				}
 			}
-			else {
-				cube_y[i][j] -= animation1_speed[i][j];
-				if (cube_y[i][j] <= 0.0)
-					move_check[i][j] = true;
+		}
+	}
+	else if (key_3) {
+		for (int i = 0; i < height_size; ++i) {
+			for (int j = 0; j < width_size; ++j) {
+				if (move_check[i][j] == 0) {
+					cube_y[i][j] += animation1_speed[i][j];
+					if (cube_y[i][j] >= 10.0) {
+						cube_y[i][j] -= animation1_speed[i][j];
+						move_check[i][j] = 1;
+					}
+					if (cube_y[i][j] > 0.2 && j < width_size - 1 && move_check[i][j + 1] == 2) {
+						move_check[i][j + 1] = 0;
+					}
+					else if (cube_y[i][j] > 0.2 && j == width_size - 1 && move_check[i + 1][0] == 2) {
+						move_check[i + 1][0] = 0;
+					}
+				}
+				else if (move_check[i][j] == 1) {
+					cube_y[i][j] -= animation1_speed[i][j];
+					if (cube_y[i][j] <= 0.0)
+						move_check[i][j] = 0;
+				}
 			}
 		}
 	}
@@ -319,7 +356,6 @@ void animation_timer(int value) {
 }
 
 void timer(int value) {
-
 	if (key_y) {
 		radian_y += 10.0f;
 		if (radian_y >= 360.0f)
@@ -361,6 +397,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	case '3':
 		key_3 = true;
 		key_2 = key_1 = false;
+		animation3_reset();
 		break;
 	case 't':
 		key_t = !key_t;
