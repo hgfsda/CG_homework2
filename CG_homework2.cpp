@@ -231,11 +231,7 @@ GLvoid drawScene() {
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, &pTransform[0][0]);
 	}
 	else if (case_display == 1) {
-		float cameraPos1_x = 0.0f;
-		float cameraPos1_y = 3.0f;
-		float cameraPos1_z = 0.0f;
-
-		glm::vec3 cameraPos1 = glm::vec3(cameraPos1_x, cameraPos1_y, cameraPos1_z);      //--- 카메라 위치
+		glm::vec3 cameraPos1 = glm::vec3(0.0 , 3.0, 0.0);      //--- 카메라 위치
 		glm::vec3 cameraDirection1 = glm::vec3(0.0f, 0.0f, 0.0f); //--- 카메라 바라보는 방향
 		glm::vec3 cameraUp1 = glm::vec3(0.0f, 0.0f, 1.0f);        //--- 카메라 위쪽 방향
 
@@ -376,16 +372,24 @@ void timer(int value) {
 			radian_y = 0;
 	}
 	if (key_w) {
-		cameraPos += cameraSpeed * cameraDirection;
+		cameraPos_x += cameraDirection_x;
+		cameraPos_y += cameraDirection_y;
+		cameraPos_z += cameraDirection_z;
 	}
 	if (key_a) {
-		cameraPos -= cameraSpeed * cameraDirection;
+		cameraPos_x -= glm::normalize(glm::cross(cameraDirection, cameraUp)).x;
+		cameraPos_y -= glm::normalize(glm::cross(cameraDirection, cameraUp)).y;
+		cameraPos_z -= glm::normalize(glm::cross(cameraDirection, cameraUp)).z;
 	}
 	if (key_s) {
-		cameraPos -= glm::normalize(glm::cross(cameraDirection, cameraUp)) * cameraSpeed;
+		cameraPos_x -= cameraDirection_x;
+		cameraPos_y -= cameraDirection_y;
+		cameraPos_z -= cameraDirection_z;
 	}
 	if (key_d) {
-		cameraPos += glm::normalize(glm::cross(cameraDirection, cameraUp)) * cameraSpeed;
+		cameraPos_x += glm::normalize(glm::cross(cameraDirection, cameraUp)).x;
+		cameraPos_y += glm::normalize(glm::cross(cameraDirection, cameraUp)).y;
+		cameraPos_z += glm::normalize(glm::cross(cameraDirection, cameraUp)).z;
 	}
 	Display();
 	glutTimerFunc(100, timer, 1);
@@ -509,8 +513,6 @@ void Motion(int x, int y) {
 			pitch = 89.0f;
 		if (pitch < -89.0f)
 			pitch = -89.0f;
-
-
 	}
 	Display();
 }
