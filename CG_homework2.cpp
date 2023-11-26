@@ -42,6 +42,9 @@ GLuint fragmentShader; //--- 프래그먼트 세이더 객체
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
 GLuint vao[401], vbo[401];
 std::vector<GLfloat> data[400];
+glm::vec3 cameraPos;      //--- 카메라 위치
+glm::vec3 cameraDirection; //--- 카메라 바라보는 방향
+glm::vec3 cameraUp;        //--- 카메라 위쪽 방향
 int window_w, window_h;
 int height_size, width_size;
 float cameraPos_x, cameraPos_y, cameraPos_z;
@@ -57,9 +60,11 @@ int move_check[20][20];                         // 블록 위, 아래 이동 확인   0 �
 float animation1_speed[20][20];                  // 애니메이션1 블록 이동속도 0.05 ~ 0.15
 float speed;                                     // 블록 움직이는 속도
 float camera_move_x, camera_move_z;              // 카메라 움직임 위치
-float cameraDirection_x, cameraDirection_y;      // 카메라 바라보는 방향
+float cameraDirection_x, cameraDirection_y, cameraDirection_z;      // 카메라 바라보는 방향
 BOOL left_button;                                
 int animation_speed;                             // 애니메이션 스피드
+float cameraSpeed;
+float pitch, yaw;
 
 void menu() {
 	std::cout << "-----------명령어------------" << std::endl;
@@ -119,9 +124,14 @@ void reset() {
 	radian_y = 0;
 	speed = 1;
 	camera_move_x = camera_move_z = 0;
-	cameraDirection_x = cameraDirection_y = 0;
+	cameraDirection_x = cameraDirection_y = cameraDirection_z = 0;
 	left_button = false;
 	animation_speed = 100;
+	cameraSpeed = 0.5f;
+	cameraPos_x = -10.0f;
+	cameraPos_y = 20.0f;
+	cameraPos_z = 10.0f;
+	pitch = yaw = 0;
 	while (1) {
 		std::cout << "가로 세로 크기를 입력해 주세요(최소 5, 최대 20) : ";
 		std::cin >> width_size;
@@ -200,21 +210,16 @@ GLvoid drawScene() {
 	int viewLoc = glGetUniformLocation(shaderProgramID, "view"); //--- 버텍스 세이더에서 뷰잉 변환 행렬 변수값을 받아온다.
 	int projLoc = glGetUniformLocation(shaderProgramID, "projection");
 	if (case_display == 0) {
-		cameraPos_x = -10.0f;
-		cameraPos_y = 20.0f;
-		cameraPos_z = 10.0f;
+		cameraDirection_x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+		cameraDirection_y = sin(glm::radians(pitch));
+		cameraDirection_z = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
 
-		glm::vec3 cameraPos = glm::vec3(cameraPos_x, cameraPos_y, cameraPos_z);      //--- 카메라 위치
-		glm::vec3 cameraDirection = glm::vec3(cameraDirection_x, cameraDirection_y, 0.0f); //--- 카메라 바라보는 방향
-		glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);        //--- 카메라 위쪽 방향
+		cameraPos = glm::vec3(cameraPos_x, cameraPos_y, cameraPos_z);      //--- 카메라 위치
+		cameraDirection = glm::vec3(cameraDirection_x, cameraDirection_y, cameraDirection_z); //--- 카메라 바라보는 방향
+		cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);        //--- 카메라 위쪽 방향
 
 		glm::mat4 vTransform = glm::mat4(1.0f);
-		glm::mat4 R_camera = glm::mat4(1.0f);
-		glm::mat4 T_camera = glm::mat4(1.0f);
-		R_camera = glm::rotate(R_camera, glm::radians(radian_y), glm::vec3(0.0, 1.0, 0.0));
-		T_camera = glm::translate(T_camera, glm::vec3(camera_move_x, 0.0, camera_move_z));
-		vTransform = glm::lookAt(cameraPos, cameraDirection, cameraUp);
-		vTransform = vTransform * T_camera * R_camera;
+		vTransform = glm::lookAt(cameraPos, cameraPos + cameraDirection, cameraUp);
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &vTransform[0][0]);
 
 		glm::mat4 pTransform = glm::mat4(1.0f);
@@ -222,16 +227,16 @@ GLvoid drawScene() {
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, &pTransform[0][0]);
 	}
 	else if (case_display == 1) {
-		cameraPos_x = 0.0f;
-		cameraPos_y = 3.0f;
-		cameraPos_z = 0.0f;
+		float cameraPos1_x = 0.0f;
+		float cameraPos1_y = 3.0f;
+		float cameraPos1_z = 0.0f;
 
-		glm::vec3 cameraPos = glm::vec3(cameraPos_x, cameraPos_y, cameraPos_z);      //--- 카메라 위치
-		glm::vec3 cameraDirection = glm::vec3(0.0f, 0.0f, 0.0f); //--- 카메라 바라보는 방향
-		glm::vec3 cameraUp = glm::vec3(0.0f, 0.0f, 1.0f);        //--- 카메라 위쪽 방향
+		glm::vec3 cameraPos1 = glm::vec3(cameraPos1_x, cameraPos1_y, cameraPos1_z);      //--- 카메라 위치
+		glm::vec3 cameraDirection1 = glm::vec3(0.0f, 0.0f, 0.0f); //--- 카메라 바라보는 방향
+		glm::vec3 cameraUp1 = glm::vec3(0.0f, 0.0f, 1.0f);        //--- 카메라 위쪽 방향
 
 		glm::mat4 vTransform = glm::mat4(1.0f);
-		vTransform = glm::lookAt(cameraPos, cameraDirection, cameraUp);
+		vTransform = glm::lookAt(cameraPos1, cameraDirection1, cameraUp1);
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &vTransform[0][0]);
 
 		glm::mat4 pTransform = glm::mat4(1.0f);
@@ -367,16 +372,16 @@ void timer(int value) {
 			radian_y = 0;
 	}
 	if (key_w) {
-		camera_move_z += 1;
+		cameraPos += cameraSpeed * cameraDirection;
 	}
 	if (key_a) {
-		camera_move_x += 1;
+		cameraPos -= cameraSpeed * cameraDirection;
 	}
 	if (key_s) {
-		camera_move_z -= 1;
+		cameraPos -= glm::normalize(glm::cross(cameraDirection, cameraUp)) * cameraSpeed;
 	}
 	if (key_d) {
-		camera_move_x -= 1;
+		cameraPos += glm::normalize(glm::cross(cameraDirection, cameraUp)) * cameraSpeed;
 	}
 	Display();
 	glutTimerFunc(100, timer, 1);
@@ -415,6 +420,7 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		break;
 	case 'w':
 		key_w = true;
+		cameraPos += cameraSpeed * cameraDirection;
 		break;
 	case 'a':
 		key_a = true;
@@ -426,11 +432,11 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		key_d = true;
 		break;
 	case '+':
-		if (animation_speed > 50)
+		if (animation_speed > 20)
 			animation_speed -= 10;
 		break;
 	case '-':
-		if (animation_speed < 200)
+		if (animation_speed < 300)
 			animation_speed += 10;
 		break;
 	case 'r':   // 리셋
@@ -449,6 +455,7 @@ GLvoid KeyboardUp(unsigned char key, int x, int y) {
 	switch (key) {
 	case 'w':
 		key_w = false;
+		break;
 	case 'a':
 		key_a = false;
 		break;
@@ -488,11 +495,18 @@ void Motion(int x, int y) {
 		float delta_x = normalized_x - prev_mouse_x;
 		float delta_y = normalized_y - prev_mouse_y;
 
-		cameraDirection_x += delta_x * 5;
-		cameraDirection_y += delta_y * 5;
-
 		prev_mouse_x = normalized_x;
 		prev_mouse_y = normalized_y;
+
+		yaw += delta_x * 50;
+		pitch += delta_y * 50;
+
+		if (pitch > 89.0f)
+			pitch = 89.0f;
+		if (pitch < -89.0f)
+			pitch = -89.0f;
+
+
 	}
 	Display();
 }
