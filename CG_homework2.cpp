@@ -25,6 +25,7 @@ GLvoid Keyboard(unsigned char key, int x, int y);
 GLvoid KeyboardUp(unsigned char key, int x, int y);
 void Mouse(int button, int state, int x, int y);
 void Motion(int x, int y);
+GLvoid MouseWheel(int wheel, int direction, int x, int y);
 char* filetobuf(const char* file);
 void ReadObj(FILE* path, int index);
 GLvoid Display();
@@ -64,7 +65,8 @@ float cameraDirection_x, cameraDirection_y, cameraDirection_z;      // 카메라 바
 BOOL left_button;                                
 int animation_speed;                             // 애니메이션 스피드
 float cameraSpeed;
-float pitch, yaw;
+float pitch, yaw;                                // 마우스 화면 이동
+float fov;                                       // 줌
 
 void menu() {
 	std::cout << "-----------명령어------------" << std::endl;
@@ -132,6 +134,7 @@ void reset() {
 	cameraPos_y = 20.0f;
 	cameraPos_z = 10.0f;
 	pitch = yaw = -40;
+	fov = 50;
 	while (1) {
 		std::cout << "가로 세로 크기를 입력해 주세요(최소 5, 최대 20) : ";
 		std::cin >> width_size;
@@ -185,6 +188,7 @@ void main(int argc, char** argv)
 	glutKeyboardUpFunc(KeyboardUp);
 	glutMouseFunc(Mouse);
 	glutMotionFunc(Motion);
+	glutMouseWheelFunc(MouseWheel);
 	glutTimerFunc(100, timer, 1);
 	glutTimerFunc(animation_speed, animation_timer, 1);
 	glutMainLoop();
@@ -223,7 +227,7 @@ GLvoid drawScene() {
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &vTransform[0][0]);
 
 		glm::mat4 pTransform = glm::mat4(1.0f);
-		pTransform = glm::perspective(glm::radians(50.0f), (float)window_w / (float)window_h, 0.1f, 200.0f);
+		pTransform = glm::perspective(glm::radians(fov), (float)window_w / (float)window_h, 0.1f, 200.0f);
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, &pTransform[0][0]);
 	}
 	else if (case_display == 1) {
@@ -509,6 +513,21 @@ void Motion(int x, int y) {
 
 	}
 	Display();
+}
+
+GLvoid MouseWheel(int wheel, int direction, int x, int y) {
+	if (direction == 1) {
+		if (fov >= 1.0f && fov <= 70.0f)
+			fov -= 1;
+		if (fov <= 1.0f)
+			fov = 1.0f;
+	}
+	else if (direction == -1) {
+		if (fov >= 1.0f && fov <= 70.0f)
+			fov += 1;
+		if (fov >= 70.0f)
+			fov = 70.0f;
+	}
 }
 
 GLvoid Reshape(int w, int h) {
