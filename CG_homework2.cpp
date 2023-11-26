@@ -131,7 +131,7 @@ void reset() {
 	cameraPos_x = -10.0f;
 	cameraPos_y = 20.0f;
 	cameraPos_z = 10.0f;
-	pitch = yaw = 0;
+	pitch = yaw = -40;
 	while (1) {
 		std::cout << "가로 세로 크기를 입력해 주세요(최소 5, 최대 20) : ";
 		std::cin >> width_size;
