@@ -51,7 +51,7 @@ int height_size, width_size;
 float cameraPos_x, cameraPos_y, cameraPos_z;
 float cube_x[20][20], cube_y[20][20], cube_z[20][20];
 float length_width, length_height;               // À°¸éÃ¼ ±æÀÌÀÇ Àı¹İ
-BOOL key_1, key_2, key_3, key_t, key_y, key_Y;
+BOOL key_1, key_2, key_3, key_t;
 BOOL key_w, key_a, key_s, key_d;
 int key_c;                                       // ÇöÀç ¼±ÅÃµÈ ºûÀÇ »ö±ò
 float light_r[3], light_g[3], light_b[3];        // ºûÀÇ »ö±ò
@@ -117,7 +117,7 @@ void animation3_reset() {
 
 void reset() {
 	key_1 = key_t = true;
-	key_2 = key_3 = key_y = key_Y = false;
+	key_2 = key_3 = false;
 	key_w = key_a = key_s = key_d = false;
 	key_c = 0;
 	light_r[0] = 1.0, light_g[0] = 1.0, light_b[0] = 1.0;
@@ -361,16 +361,6 @@ void animation_timer(int value) {
 }
 
 void timer(int value) {
-	if (key_y) {
-		radian_y += 10.0f;
-		if (radian_y >= 360.0f)
-			radian_y = 0;
-	}
-	if (key_Y) {
-		radian_y -= 10.0f;
-		if (radian_y <= -360.0f)
-			radian_y = 0;
-	}
 	if (key_w) {
 		cameraPos_x += cameraDirection_x;
 		cameraPos_y += cameraDirection_y;
@@ -417,14 +407,6 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		break;
 	case 'c':
 		key_c = (key_c + 1) % 3;
-		break;
-	case 'y':
-		key_y = !key_y;
-		key_Y = false;
-		break;
-	case 'Y':
-		key_Y = !key_Y;
-		key_y = false;
 		break;
 	case 'w':
 		key_w = true;
